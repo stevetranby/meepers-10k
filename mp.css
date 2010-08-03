@@ -1,6 +1,7 @@
 body { font-family: Helvetica, Arial, sans-serif; }
 
-.c, #p { position: absolute; background: url(mp.png) 0 0 no-repeat; }
+.c, .m, #p { position: absolute; background: url(mp.png) 0 0 no-repeat; }
 
 .c { border: 1px solid black; }
-#p { border: 3px solid red; background: #349; }
+.m { border: 2px solid red; background: #940; }
+#p { border: 3px solid green; background: #349; }
