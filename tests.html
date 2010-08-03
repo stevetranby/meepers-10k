@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+    <style type="text/css">
+        #unichars { font-size: 30px; }
+        #svgtests { border: 1px solid black; width: 400px; height: 400px; margin: 10px; background: #cccccc; }
+        #enemy { position: relative; width: 64px; height: 64px; margin: 10px; padding: 0; background: #3939ff; }
+        #ehead, #eleye, #ereye, #enose, #elegs { position: absolute; background: #ffffff; }
+        #ehead { top: 10px; left: 10px; width: 48px; height: 40px; border-radius: 5px; }
+        #eleye { top: 15px; left: 20px; width: 8px; height: 8px; background-color: green; }
+        #ereye { top: 15px; left: 40px; width: 8px; height: 8px; background-color: yellow; }
+        #enose { top: 25px; left: 30px; width: 8px; height: 8px; background-color: orange; }
+        #elegs { top: 40px; left: 10px; width: 8px; height: 20px; background-color: purple; }
+    </style>
+    <script type="text/javascript">
+var log = function(str) { if(console.log) console.log(str); }
+var f = function;
+var a = f() {
+  return 7;
+};
+log(a());
+    </script>
+</head>
+<body>
+    <div>
+        <div id="unichars">
+            &#9733; &#9742; &#9755; &#9758; &#9824; &#9827; &#9829; &#9830;
+        </div>
+        <div id="svgtests">
+            <img src="svg-si-enemy.svg" />
+        </div>
+        <div id="enemy">
+            <div id="ehead">a</div>
+            <div id="eleye">b</div>
+            <div id="ereye">c</div>
+            <div id="enose">d</div>
+            <div id="elegs">e</div>
+        </div>
+    </div>
+</body>
+</html>
