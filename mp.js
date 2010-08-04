@@ -1,6 +1,8 @@
 ﻿//globals 
 function log(msg) { if (console.log) { console.log(msg); } }
-function jqdiv(id, cls, str, x, y, w, h) { return $("<div id='" + id + "' class='" + cls + "'>" + str + "</div>").css({ left: x, top: y, width: w, height: h }); }
+function jqdiv(id, cls, str, x, y, w, h) {
+    return $("<div/>", { 'id': id, 'class': cls, 'html': str }).css({ left: x, top: y, width: w, height: h });
+}
 
 function update_hud(health, rocks, keys, room) {
     $("#health").html(health);
@@ -12,6 +14,7 @@ function update_hud(health, rocks, keys, room) {
 var 
 STILL = 0, UP = 1, LEFT = 2, RIGHT = 3, DOWN = 4,
 ALIVE = 0, DEAD = 1, RANDOM = 2, CHASE = 3, EVADE = 4, STILL = 5, PATTERN = 6, EXPLODE = 7,
+WALL = 0, DOOR = 1, FLOOR = 2, KEY = 3, ROCKBAG = 4,
 RUNNING = 0, PAUSED = 1,
 KEY_SPACE = 32, KEY_LEFTARROW = 37, KEY_UPARROW = 38, KEY_RIGHTARROW = 39, KEY_DOWNARROW = 40, KEY_P = 80,
 keys = [],
@@ -20,9 +23,10 @@ rows = 9,
 cols = 16,
 numRooms = rows * cols,
 numMonsters = 5,
-divArea = $('#area'),
-divGame = $('#game'),
-divPaused = $('#paused'),
+idArea = '#area',
+idGame = '#game',
+idPaused = '#paused',
+tiles = [],
 monsters = [],
 weapons = [],
 firing = false,
@@ -43,8 +47,8 @@ dirY = function (dir) {
 
 player = {
     id: 'p0',
-    x: 10,
-    y: 10,
+    x: 100,
+    y: 100,
     dx: 0,
     dy: 0,
     w: cellsize,
@@ -65,30 +69,49 @@ game = {
 
         log('init');
 
-        // init	      
-        divArea.css({ width: cols * cellsize + 'px', height: rows * cellsize + 'px' });
-        divPaused.css({ width: cols * cellsize + 'px', height: rows * cellsize + 'px' });
-        divGame.css({ width: cols * cellsize + 'px', height: rows * cellsize + 'px' });
+        // init	            
+        $(idArea + ',' + idPaused + ',' + idGame).css({ width: cols * cellsize + 'px', height: rows * cellsize + 'px' });
 
         for (y = 0; y < rows; y++) {
+            tiles[y] = [];
             for (x = 0; x < cols; x++) {
                 // create div cell          
-                var cls = 'c c';
-                if (0 === y || 0 === x || rows - 1 === y || cols - 1 === x) { cls += '2'; }
-                else { cls += '1'; }
-                divGame.append(jqdiv('c' + (y * x), cls, '.', x * cellsize, y * cellsize, cellsize, cellsize));
+                var cls = 'c c', t = WALL;
+                if (0 === y || 0 === x || rows - 1 === y || cols - 1 === x) {
+                    if (cols - 1 === x && Math.floor(rows / 2) === y) {
+                        cls += '3';
+                        t = DOOR;
+                    } else {
+                        cls += '2';
+                    }
+                }
+                else {
+                    cls += '1';
+                    t = FLOOR;
+                }
+                $(idGame).append(jqdiv('c' + (y * x), cls, '.', x * cellsize, y * cellsize, cellsize, cellsize));
+
+                tiles[y][x] = {
+                    x: x,
+                    y: y,
+                    w: cellsize,
+                    h: cellsize,
+                    type: t
+                };
             }
         }
 
         // init player
-        divGame.append(player.el);
+        $(idGame).append(player.el);
 
         // init monsters      
         for (var i = 0; i < numMonsters; ++i) {
             monsters[i] = {
                 id: 'm' + i,
-                x: 50 * i + 50,
-                y: 20,
+                x: 50 * i + 100,
+                y: 100,
+                oldx: 50 * i + 100,
+                oldy: 100,
                 dx: Math.random() * 5,
                 dy: Math.random() * 5,
                 w: cellsize,
@@ -99,7 +122,7 @@ game = {
                 dir: DOWN
             };
             //log(monsters[i]);
-            divGame.append(monsters[i].el);
+            $(idGame).append(monsters[i].el);
         }
     },
 
@@ -162,7 +185,11 @@ game = {
             player.health -= monster.attackPower;
         }
 
-        // check collisions                
+        // check collisions    
+        if (game.collideTile(player, false)) {
+            player.x = player.oldx;
+            player.y = player.oldy;
+        }
         if (player.x < 0 || player.x > (cols - 1) * cellsize) {
             player.x = player.oldx;
         }
@@ -181,13 +208,15 @@ game = {
             if (monster.state !== DEAD) {
                 game.move(monster);
 
-                // if threshold, change dir
-                if (monster.x > (cols - 1) * cellsize) { monster.dir = LEFT; monster.dx = -monster.dx; }
-                if (monster.x < 0) { monster.dir = RIGHT; monster.dx = -monster.dx; }
-                if (monster.y > (rows - 1) * cellsize) { monster.dir = UP; monster.dy = -monster.dy; }
-                if (monster.y < 0) { monster.dir = DOWN; monster.dy = -monster.dy; }
+                //
+                if (game.collideTile(monster, true)) {
+                    monster.x = monster.oldx;
+                    monster.y = monster.oldy;
+                    monster.dx = -monster.dx;
+                    monster.dy = -monster.dy;
+                }
 
-                game.update(monster);
+                game.update(monster, true);
             }
         }
     },
@@ -200,6 +229,8 @@ game = {
             id: _id,
             x: e.x,
             y: e.y,
+            oldx: e.x,
+            oldy: e.y,
             dx: 6 * dirX(e.dir),
             dy: 6 * dirY(e.dir),
             w: cellsize / 2,
@@ -210,7 +241,7 @@ game = {
         });
 
         var w = weapons[weapons.length - 1];
-        divGame.append(w.el);
+        $(idGame).append(w.el);
 
         //log('firing weapon(of ' + weapons.length + ') with id, x,y,dx,dy = ' + w.id + ',' + w.x + ',' + w.y + ',' + w.dx + ',' + w.dy);
 
@@ -278,6 +309,32 @@ game = {
                 //                }
                 return;
             }
+        }
+    },
+
+    collideTile: function (e, ismonster) {
+        var x1 = Math.floor(e.x / cellsize),
+            x2 = Math.floor((e.x + e.w) / cellsize),
+            y1 = Math.floor(e.y / cellsize),
+            y2 = Math.floor((e.y + e.h) / cellsize);
+
+        //log(x1 + ',' + y1 + ',' + x2 + ',' + y2);
+
+        if (x1 >= 0 && y1 >= 0 && x2 < cols && y2 < rows) {
+            
+            t1 = tiles[y1][x1].type;
+            t2 = tiles[y2][x2].type;
+
+            if (t1 == WALL || t2 == WALL) {
+                return true;
+            }
+
+            if (ismonster && (t1 === DOOR || t2 === DOOR)) {
+                return true;
+            }
+            return false;
+        } else {
+            return true;
         }
     },
 

@@ -7,6 +7,7 @@ body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background:
 .c { border: 1px solid black;  border-radius: 0;}
 .c1 { background: #ff9; }
 .c2 { background: #993; }
+.c3 { background: #999; }
 .m { border: 2px solid red; background: #933;  }
 .p { border: 3px solid green; background: #339; -webkit-transform: rotate(90deg); }
 .w { border: 3px solid #666; background: #ccc; }
@@ -15,4 +16,4 @@ body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background:
 #paused { background: #ccc; opacity: 0.75; display: none; }
 
 #title { top: 0px; left: 100px; padding: 5px; height: 50px; }
-#hud { top: 70px; left: 5px; width: 90px; height: 100px; }
+#hud { top: 70px; left: 5px; width: 90px; height: 100px; font-size: smaller; }
