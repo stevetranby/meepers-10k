@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+  <title>SpaceInvaders 10k</title>
+  <link href="si.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="a"></div>
+<!--script src="http://ajax.microsoft.com/ajax/jquery/jquery-1.4.2.min.js" type="text/javascript"></script-->
+<script src="jq.min.js" type="text/javascript"></script>
+<script language="JavaScript">
+    document.onkeydown = checkKeycode
+    function checkKeycode(e) {
+        var keycode;
+        if (window.event) keycode = window.event.keyCode;
+        else if (e) keycode = e.which;
+        $('#keycode').html("keycode: " + keycode);
+    }
+</script>
+<div id="keycode"></div>
+</body>
+</html>
