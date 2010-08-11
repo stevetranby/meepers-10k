@@ -1,4 +1,11 @@
-﻿//globals 
+﻿////////////////////////////////////////
+// Author: Steve Tranby
+// TODOs:
+// - Fix wall collision to allow moving (or restrict movement to one direction at a time, might be the better way for now?)
+// - Fix off by one calculation of position
+////////////////////////////////////////
+
+//globals 
 function log(msg) { if (console.log) { console.log(msg); } }
 function jqdiv(id, cls, str, x, y, w, h) {
     return $("<div/>", { 'id': id, 'class': cls, 'html': str }).css({ left: x, top: y, width: w, height: h });
@@ -11,12 +18,14 @@ function update_hud(health, rocks, keys, room) {
     $("#health").html(room);
 }
 
-var 
+var
+M = Math,
 STILL = 0, UP = 1, LEFT = 2, RIGHT = 3, DOWN = 4,
 ALIVE = 0, DEAD = 1, RANDOM = 2, CHASE = 3, EVADE = 4, STILL = 5, PATTERN = 6, EXPLODE = 7,
 WALL = 0, DOOR = 1, FLOOR = 2, KEY = 3, ROCKBAG = 4,
 RUNNING = 0, PAUSED = 1,
 KEY_SPACE = 32, KEY_LEFTARROW = 37, KEY_UPARROW = 38, KEY_RIGHTARROW = 39, KEY_DOWNARROW = 40, KEY_P = 80,
+KEY_A = 65, KEY_W = 87, KEY_D = 68, KEY_S = 83,
 keys = [],
 cellsize = 32,
 rows = 9,
@@ -26,6 +35,9 @@ numMonsters = 5,
 idArea = '#area',
 idGame = '#game',
 idPaused = '#paused',
+idHealth = "#health",
+idRocks = "#rocks",
+idKeys = "#keys",
 tiles = [],
 monsters = [],
 weapons = [],
@@ -72,13 +84,14 @@ game = {
         // init	            
         $(idArea + ',' + idPaused + ',' + idGame).css({ width: cols * cellsize + 'px', height: rows * cellsize + 'px' });
 
+        // TODO: create a tile object
         for (y = 0; y < rows; y++) {
             tiles[y] = [];
             for (x = 0; x < cols; x++) {
                 // create div cell          
                 var cls = 'c c', t = WALL;
                 if (0 === y || 0 === x || rows - 1 === y || cols - 1 === x) {
-                    if (cols - 1 === x && Math.floor(rows / 2) === y) {
+                    if ((x === 0 || cols - 1 === x) && Math.floor(rows / 2) === y) {
                         cls += '3';
                         t = DOOR;
                     } else {
@@ -116,7 +129,7 @@ game = {
                 dy: Math.random() * 5,
                 w: cellsize,
                 h: cellsize,
-                attackPower: 5,
+                attackPower: 2,
                 state: ALIVE,
                 el: jqdiv('m' + i, 'm', 'M', 0, 0, cellsize, cellsize),
                 dir: DOWN
@@ -185,17 +198,40 @@ game = {
             player.health -= monster.attackPower;
         }
 
-        // check collisions    
+        if (player.x <= 0) { player.x = (cols - 2) * cellsize - 1 }
+        if (player.x >= (cols - 1) * cellsize) { player.x = cellsize + 1 }
+        if (player.y <= 0) { player.y = (rows - 2) * cellsize - 1 }
+        if (player.y >= (rows - 1) * cellsize) { player.y = cellsize + 1 }
+
+        // TODO: fix this, must be a better way, possibly do 2 collisions for separate directions
+        // check collisions            
         if (game.collideTile(player, false)) {
-            player.x = player.oldx;
-            player.y = player.oldy;
-        }
-        if (player.x < 0 || player.x > (cols - 1) * cellsize) {
-            player.x = player.oldx;
-        }
-        if (player.y < 0 || player.y > (rows - 1) * cellsize) {
-            player.y = player.oldy;
-        }
+            // player hit a non-walkable tile
+            player.x -= player.dx;
+            if (game.collideTile(player, false)) {
+                // player hit non-walkable tile in vert dir                
+                player.y -= player.dy;
+                player.x += player.dx;
+                if (game.collideTile(player, false)) {
+                    // player hit non-walkable tile in horz dir                
+                    player.x -= player.dx;
+                } else {
+                    // player can move in y
+                    player.y += player.dy;
+                }
+            } else {
+                // player can move in x                
+                player.x += player.dx;
+                player.y -= player.dy;
+                if (game.collideTile(player, false)) {
+                    // player hit non-walkable tile in horz dir                
+                    player.x -= player.dx;
+                } else {
+                    // player can move in y
+                    player.y += player.dy;
+                }
+            }
+        }        
 
         game.update(player);
     },
@@ -207,6 +243,11 @@ game = {
             var monster = monsters[i];
             if (monster.state !== DEAD) {
                 game.move(monster);
+
+                rnd = Math.floor(Math.random() * 10);
+                if (rnd % 10 == 0) {
+                    game.fireWeapon(monster);
+                }
 
                 //
                 if (game.collideTile(monster, true)) {
@@ -237,7 +278,8 @@ game = {
             h: cellsize / 2,
             parent: e,
             state: ALIVE,
-            el: jqdiv(_id, 'w', 'o', e.x + cellsize / 2, e.y + cellsize / 2, cellsize / 2, cellsize / 2)
+            attackPower: 1,
+            el: jqdiv(_id, 'w' + ((e == player) ? 'P' : 'M'), 'o', e.x + cellsize / 2, e.y + cellsize / 2, cellsize / 2, cellsize / 2)
         });
 
         var w = weapons[weapons.length - 1];
@@ -257,14 +299,30 @@ game = {
             if (w.state !== DEAD) {
                 game.move(w);
 
-                // if collide with monster, kill monster
-                var monster = game.collideMonster(w);
-                if (null !== monster) {
-                    game.killMonster(monster);
-                    game.killWeapon(w);
+                if (w.parent == player) {
+                    // if collide with monster, kill monster
+                    var monster = game.collideMonster(w);
+                    if (null !== monster) {
+                        game.killMonster(monster);
+                        game.killWeapon(w);
+                    }
+                } else {
+                    // if collide with player, hurt player
+                    if (game.collidePlayer(w)) {
+                        player.health -= w.attackPower;
+                        player.el.animate({ opacity: 0.5 }, {
+                            duration: 100,
+                            complete: function () {
+                                player.el.animate({ opacity: 1.0 }, { duration: 100 });
+                            }
+                        });
+                        game.killWeapon(w);
+                    }
                 }
 
-                // TODO: DRY collision stuff
+                if (game.collideTile(w, true)) {
+                    game.killWeapon(w);
+                }
                 // if threshold, change dir            
                 if (w.x < 0 || w.y < 0 || w.x > (cols - 1) * cellsize || w.y > (rows - 1) * cellsize) {
                     game.killWeapon(w);
@@ -276,9 +334,9 @@ game = {
     },
 
     updateHUD: function () {
-        $("#health").html(player.health);
-        $("#rocks").html(player.rocks);
-        $("#keys").html(player.keys);
+        $(idHealth).html(player.health);
+        $(idRocks).html(player.rocks);
+        $(idKeys).html(player.keys);
     },
 
     killWeapon: function (w) {
@@ -291,7 +349,7 @@ game = {
                 //                } else {
                 //                    weapons = [];
                 //                }
-                log('killed weapon: ' + w.id);
+                //log('killed weapon: ' + w.id);
                 return;
             }
         }
@@ -312,16 +370,14 @@ game = {
         }
     },
 
-    collideTile: function (e, ismonster) {
+    collideTile: function (e, collideWithDoor) {
         var x1 = Math.floor(e.x / cellsize),
             x2 = Math.floor((e.x + e.w) / cellsize),
             y1 = Math.floor(e.y / cellsize),
             y2 = Math.floor((e.y + e.h) / cellsize);
 
-        //log(x1 + ',' + y1 + ',' + x2 + ',' + y2);
-
         if (x1 >= 0 && y1 >= 0 && x2 < cols && y2 < rows) {
-            
+            //log('collision with tile ' + x1 + ',' + y1 + ',' + x2 + ',' + y2);
             t1 = tiles[y1][x1].type;
             t2 = tiles[y2][x2].type;
 
@@ -329,7 +385,7 @@ game = {
                 return true;
             }
 
-            if (ismonster && (t1 === DOOR || t2 === DOOR)) {
+            if (collideWithDoor && (t1 === DOOR || t2 === DOOR)) {
                 return true;
             }
             return false;
@@ -350,14 +406,21 @@ game = {
         return null;
     },
 
+    collidePlayer: function (e) {
+        if (e.x < player.x + player.w && e.y < player.y + player.h && e.x + e.w > player.x && e.y + e.h > player.y) {
+            return true;
+        }
+        return false;
+    },
+
     togglePaused: function () {
         log('toggling game state');
         if (game.state == RUNNING) {
             game.state = PAUSED;
-            $('#paused').show();
+            $(idPaused).show();
         } else {
             game.state = RUNNING;
-            $('#paused').hide();
+            $(idPaused).hide();
         }
     },
 

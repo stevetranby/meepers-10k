@@ -1,8 +1,8 @@
 body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background: #999; color: White; }
 
-#title, #hud, #area, #paused, #game, .c, .m, .p, .w { position: absolute; background: url(mp.png) 0 0 no-repeat; margin: 0; padding: 0; }
+#newgame, #title, #hud, #area, #paused, #game, .c, .m, .p, .wP, .wM { position: absolute; background: url(mp.png) 0 0 no-repeat; margin: 0; padding: 0; }
 
-.c, .m, .p, .w { text-align: center; border-radius: 10px; }
+.c, .m, .p, .wP, .wM { text-align: center; border-radius: 10px; }
 
 .c { border: 1px solid black;  border-radius: 0;}
 .c1 { background: #ff9; }
@@ -10,10 +10,13 @@ body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background:
 .c3 { background: #999; }
 .m { border: 2px solid red; background: #933;  }
 .p { border: 3px solid green; background: #339; -webkit-transform: rotate(90deg); }
-.w { border: 3px solid #666; background: #ccc; }
+.wP { border: 3px solid #666; background: #ccc; }
+.wM { border: 3px solid #933; background: #f99; }
 
-#area { top: 70px; left: 100px; }
+#newgame { top: 5px; left: 5px; padding: 4px; width: 80px; border: 1px solid white; background: #9f9; border-radius: 5px; font-size: 12px; }
+#newgame:hover { background: #090; cursor: pointer; }
+#area { top: 70px; left: 120px; }
 #paused { background: #ccc; opacity: 0.75; display: none; }
 
-#title { top: 0px; left: 100px; padding: 5px; height: 50px; }
+#title { top: 0px; left: 120px; padding: 5px; height: 50px; }
 #hud { top: 70px; left: 5px; width: 90px; height: 100px; font-size: smaller; }
