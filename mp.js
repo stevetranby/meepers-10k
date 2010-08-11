@@ -18,7 +18,7 @@ function update_hud(health, rocks, keys, room) {
     $("#health").html(room);
 }
 
-var
+var 
 M = Math,
 STILL = 0, UP = 1, LEFT = 2, RIGHT = 3, DOWN = 4,
 ALIVE = 0, DEAD = 1, RANDOM = 2, CHASE = 3, EVADE = 4, STILL = 5, PATTERN = 6, EXPLODE = 7,
@@ -184,9 +184,9 @@ game = {
 
         // with diagonal
         if (keys[KEY_LEFTARROW]) { tdx = -player.speed; player.dir = LEFT; }
-        if (keys[KEY_UPARROW]) { tdy = -player.speed; player.dir = UP; }
-        if (keys[KEY_RIGHTARROW]) { tdx = player.speed; player.dir = RIGHT; }
-        if (keys[KEY_DOWNARROW]) { tdy = player.speed; player.dir = DOWN; }
+        else if (keys[KEY_UPARROW]) { tdy = -player.speed; player.dir = UP; }
+        else if (keys[KEY_RIGHTARROW]) { tdx = player.speed; player.dir = RIGHT; }
+        else if (keys[KEY_DOWNARROW]) { tdy = player.speed; player.dir = DOWN; }
 
         player.dx = tdx; player.dy = tdy;
 
@@ -202,36 +202,13 @@ game = {
         if (player.x >= (cols - 1) * cellsize) { player.x = cellsize + 1 }
         if (player.y <= 0) { player.y = (rows - 2) * cellsize - 1 }
         if (player.y >= (rows - 1) * cellsize) { player.y = cellsize + 1 }
-
-        // TODO: fix this, must be a better way, possibly do 2 collisions for separate directions
+        
         // check collisions            
         if (game.collideTile(player, false)) {
             // player hit a non-walkable tile
-            player.x -= player.dx;
-            if (game.collideTile(player, false)) {
-                // player hit non-walkable tile in vert dir                
-                player.y -= player.dy;
-                player.x += player.dx;
-                if (game.collideTile(player, false)) {
-                    // player hit non-walkable tile in horz dir                
-                    player.x -= player.dx;
-                } else {
-                    // player can move in y
-                    player.y += player.dy;
-                }
-            } else {
-                // player can move in x                
-                player.x += player.dx;
-                player.y -= player.dy;
-                if (game.collideTile(player, false)) {
-                    // player hit non-walkable tile in horz dir                
-                    player.x -= player.dx;
-                } else {
-                    // player can move in y
-                    player.y += player.dy;
-                }
-            }
-        }        
+            player.x = player.oldx;
+            player.y = player.oldy;
+        }
 
         game.update(player);
     },
@@ -371,21 +348,16 @@ game = {
     },
 
     collideTile: function (e, collideWithDoor) {
-        var x1 = Math.floor(e.x / cellsize),
-            x2 = Math.floor((e.x + e.w) / cellsize),
-            y1 = Math.floor(e.y / cellsize),
-            y2 = Math.floor((e.y + e.h) / cellsize);
+        var x1 = Math.floor((e.x + e.w / 2) / cellsize), y1 = Math.floor((e.y + e.h / 2) / cellsize);
 
-        if (x1 >= 0 && y1 >= 0 && x2 < cols && y2 < rows) {
-            //log('collision with tile ' + x1 + ',' + y1 + ',' + x2 + ',' + y2);
+        if (x1 >= 0 && y1 >= 0 && x1 < cols && y1 < rows) {
             t1 = tiles[y1][x1].type;
-            t2 = tiles[y2][x2].type;
 
-            if (t1 == WALL || t2 == WALL) {
+            if (t1 == WALL) {
                 return true;
             }
 
-            if (collideWithDoor && (t1 === DOOR || t2 === DOOR)) {
+            if (collideWithDoor && t1 === DOOR) {
                 return true;
             }
             return false;
