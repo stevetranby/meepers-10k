@@ -20,12 +20,13 @@ function update_hud(health, rocks, keys, room) {
 
 var 
 M = Math,
-STILL = 0, UP = 1, LEFT = 2, RIGHT = 3, DOWN = 4,
-ALIVE = 0, DEAD = 1, RANDOM = 2, CHASE = 3, EVADE = 4, STILL = 5, PATTERN = 6, EXPLODE = 7,
-WALL = 0, DOOR = 1, FLOOR = 2, KEY = 3, ROCKBAG = 4,
-RUNNING = 0, PAUSED = 1,
-KEY_SPACE = 32, KEY_LEFTARROW = 37, KEY_UPARROW = 38, KEY_RIGHTARROW = 39, KEY_DOWNARROW = 40, KEY_P = 80,
-KEY_A = 65, KEY_W = 87, KEY_D = 68, KEY_S = 83,
+currentTime = new Date(),
+directions = { STILL: 0, LEFT: 1, UP: 2, RIGHT: 3, DOWN: 4 },
+spritestates = { ALIVE: 0, DEAD: 1 },
+aistates = { RANDOM: 0, CHASE: 1, EVADE: 2, STILL: 3, PATTERN: 4, EXPLODE: 5 },
+gamestates = { RUNNING: 0, PAUSED: 1 },
+tiletypes = { WALL: 0, DOOR: 1, FLOOR: 2, KEY: 3, ROCKBAG: 4 },
+keycodes = { SPACE: 32, LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, P: 80, A: 65, W: 87, D: 68, S: 83 },
 keys = [],
 cellsize = 32,
 rows = 9,
@@ -48,13 +49,13 @@ floors = [],
 level = 0,
 
 dirX = function (dir) {
-    if (dir == LEFT) { return -1; }
-    if (dir === RIGHT) { return 1; }
+    if (dir == directions.LEFT) { return -1; }
+    if (dir === directions.RIGHT) { return 1; }
     return 0;
 },
 dirY = function (dir) {
-    if (dir == UP) { return -1; }
-    if (dir === DOWN) { return 1; }
+    if (dir == directions.UP) { return -1; }
+    if (dir === directions.DOWN) { return 1; }
     return 0;
 },
 
@@ -66,18 +67,19 @@ player = {
     dy: 0,
     w: cellsize,
     h: cellsize,
-    speed: 4,
-    state: ALIVE,
-    dir: RIGHT,
+    speed: 3,
+    state: spritestates.ALIVE,
+    dir: directions.RIGHT,
+    lastDir: directions.RIGHT,
     health: 100,
     rocks: 10,
     keys: 1,
-    boundingBox: {x:0,y:cellsize/2,w:cellsize,h:cellsize/2},
+    boundingBox: { x: 0, y: cellsize / 2, w: cellsize, h: cellsize / 2 },
     el: jqdiv('p0', 'p', ':)', this.x, this.y, cellsize, cellsize)
 },
 
 game = {
-    state: RUNNING,
+    state: gamestates.RUNNING,
     cur_room: 0,
     init: function () {
 
@@ -91,18 +93,18 @@ game = {
             tiles[y] = [];
             for (x = 0; x < cols; x++) {
                 // create div cell          
-                var cls = 'c c', t = WALL;
+                var cls = 'c c', t = tiletypes.WALL;
                 if (0 === y || 0 === x || rows - 1 === y || cols - 1 === x || (x > 1 && x < cols - 2 && y === 5) || (x > 1 && x < cols - 2 && y === 3)) {
                     if ((x === 0 || cols - 1 === x) && Math.floor(rows / 2) === y) {
                         cls += '3';
-                        t = DOOR;
+                        t = tiletypes.DOOR;
                     } else {
                         cls += '2';
                     }
                 }
                 else {
                     cls += '1';
-                    t = FLOOR;
+                    t = tiletypes.FLOOR;
                 }
                 $(idGame).append(jqdiv('c' + (y * x), cls, '.', x * cellsize, y * cellsize, cellsize, cellsize));
 
@@ -123,22 +125,27 @@ game = {
         for (var i = 0; i < numMonsters; ++i) {
             monsters[i] = {
                 id: 'm' + i,
-                x: cellsize * i + cellsize*2,
+                x: cellsize * i + cellsize * 2,
                 y: cellsize * 2,
                 oldx: 50 * i + 100,
                 oldy: 100,
-                dx: Math.random() * 2 + 1,
-                dy: Math.random() * 2 + 1,
+                dx: 0,
+                dy: 0,
                 w: cellsize,
                 h: cellsize,
                 attackPower: 2,
-                state: ALIVE,
-                el: jqdiv('m' + i, 'm', 'M', 0, 0, cellsize, cellsize),
-                dir: DOWN
+                dir: 1 + M.floor(M.random() * directions.DOWN),
+                speed: 2,
+                state: spritestates.ALIVE,
+                el: jqdiv('m' + i, 'm', 'M', 0, 0, cellsize, cellsize)
             };
             //log(monsters[i]);
             $(idGame).append(monsters[i].el);
         }
+    },
+
+    nextRoom: function () {
+        // TODO: find the next room, and initialize it
     },
 
     nextLevel: function () {
@@ -149,6 +156,21 @@ game = {
     move: function (e) {
         e.oldx = e.x;
         e.oldy = e.y;
+        e.dx = 0; e.dy = 0;
+        switch (e.dir) {
+            case directions.LEFT:
+                e.dx = -e.speed;
+                break;
+            case directions.UP:
+                e.dy = -e.speed;
+                break;
+            case directions.RIGHT:
+                e.dx = e.speed;
+                break;
+            case directions.DOWN:
+                e.dy = e.speed;
+                break;
+        }
         e.x += e.dx;
         e.y += e.dy;
         if (e.id.indexOf('w') > 0) { log("moving " + e.id + " to " + e.x + "," + e.y); }
@@ -156,13 +178,13 @@ game = {
 
     update: function (e) {
         if (e.el) {
-            e.el.css({ left: e.x + PX, top: e.y + PX});
+            e.el.css({ left: e.x + PX, top: e.y + PX });
         }
     },
 
     updatePlayer: function () {
 
-        if (keys[KEY_SPACE]) {
+        if (keys[keycodes.SPACE]) {
             if (!firing) {
                 if (player.rocks > 0) {
                     game.fireWeapon(player);
@@ -174,8 +196,6 @@ game = {
             firing = false;
         }
 
-        var tdx = 0, tdy = 0;
-
         /*
         // no diagonals
         if(keys[37]) { tdx=-5; tdy=0; }
@@ -185,12 +205,10 @@ game = {
         */
 
         // with diagonal
-        if (keys[KEY_LEFTARROW]) { tdx = -player.speed; player.dir = LEFT; }
-        else if (keys[KEY_UPARROW]) { tdy = -player.speed; player.dir = UP; }
-        else if (keys[KEY_RIGHTARROW]) { tdx = player.speed; player.dir = RIGHT; }
-        else if (keys[KEY_DOWNARROW]) { tdy = player.speed; player.dir = DOWN; }
-
-        player.dx = tdx; player.dy = tdy;
+        if (keys[keycodes.LEFT]) { player.dir = directions.LEFT; }
+        else if (keys[keycodes.UP]) { player.dir = directions.UP; }
+        else if (keys[keycodes.RIGHT]) { player.dir = directions.RIGHT; }
+        else if (keys[keycodes.DOWN]) { player.dir = directions.DOWN; }
 
         game.move(player);
 
@@ -213,6 +231,9 @@ game = {
         }
 
         game.update(player);
+
+        if (player.dir != directions.STILL) player.lastDir = player.dir;
+        player.dir = directions.STILL;
     },
 
     updateMonsters: function () {
@@ -220,23 +241,26 @@ game = {
         for (var i = 0; i < monsters.length; ++i) {
 
             var monster = monsters[i];
-            if (monster.state !== DEAD) {
+            if (monster.state !== spritestates.DEAD) {
                 game.move(monster);
 
-                rnd = Math.floor(Math.random() * 10);
-                if (rnd % 10 == 0) {
+                rnd = Math.floor(Math.random() * 50);
+                if (rnd == 25) {
                     game.fireWeapon(monster);
                 }
 
                 //
                 if (game.collideTile(monster, true)) {
-                    monster.x = monster.oldx;
-                    monster.y = monster.oldy;
-                    monster.dx = -monster.dx;
-                    monster.dy = -monster.dy;
+                    monster.x -= 2 * monster.dx;
+                    monster.y -= 2 * monster.dy;
+                    log("[before]monster.dir = " + monster.dir);
+                    monster.dir = (monster.dir < directions.DOWN) ? monster.dir + 1 : directions.LEFT;
+                    log("[after]monster.dir = " + monster.dir);
                 }
 
                 game.update(monster, true);
+
+                if (monster.dir != directions.STILL) monster.lastDir = monster.dir;
             }
         }
     },
@@ -245,18 +269,23 @@ game = {
 
         //log('firing weapon with x,y,dir = ' + e.x + ',' + e.y + ',' + e.dir);
         var _id = 'w' + weapons.length;
+
+        log("firing weapon with dir = " + e.dir);
+
         weapons.push({
             id: _id,
             x: e.x,
             y: e.y,
             oldx: e.x,
             oldy: e.y,
-            dx: 4 * dirX(e.dir),
-            dy: 4 * dirY(e.dir),
+            dx: 0,
+            dy: 0,
             w: cellsize / 2,
             h: cellsize / 2,
+            dir: e.lastDir,
+            speed: 5,
             parent: e,
-            state: ALIVE,
+            state: spritestates.ALIVE,
             attackPower: 1,
             el: jqdiv(_id, 'w' + ((e == player) ? 'P' : 'M'), 'o', e.x + cellsize / 2, e.y + cellsize / 2, cellsize / 2, cellsize / 2)
         });
@@ -275,7 +304,8 @@ game = {
         for (var i = 0; i < weapons.length; ++i) {
             var w = weapons[i];
             //log(w.id + ' [' + w.state + ']:: ' + w.x + ',' + w.y + ',' + w.dx + ',' + w.dy);
-            if (w.state !== DEAD) {
+            if (w.state !== spritestates.DEAD) {
+
                 game.move(w);
 
                 if (w.parent == player) {
@@ -321,7 +351,7 @@ game = {
     killWeapon: function (w) {
         for (var i = 0; i < weapons.length; ++i) {
             if (w === weapons[i]) {
-                w.state = DEAD;
+                w.state = spritestates.DEAD;
                 if (w.el) { w.el.hide(); }
                 //                if (weapons.length > 0) {
                 //                    weapons.splice(i, 1);
@@ -337,7 +367,7 @@ game = {
     killMonster: function (m) {
         for (var i = 0; i < monsters.length; ++i) {
             if (m === monsters[i]) {
-                m.state = DEAD;
+                m.state = spritestates.DEAD;
                 if (m.el) { m.el.hide(); }
                 //                if (monsters.length > 0) {
                 //                    monsters.splice(i, 1);
@@ -355,11 +385,11 @@ game = {
         if (x1 >= 0 && y1 >= 0 && x1 < cols && y1 < rows) {
             t1 = tiles[y1][x1].type;
 
-            if (t1 == WALL) {
+            if (t1 == tiletypes.WALL) {
                 return true;
             }
 
-            if (collideWithDoor && t1 === DOOR) {
+            if (collideWithDoor && t1 === tiletypes.DOOR) {
                 return true;
             }
             return false;
@@ -371,7 +401,7 @@ game = {
     collideMonster: function (e) {
         for (var i = 0; i < monsters.length; ++i) {
             var m = monsters[i];
-            if (m.state !== DEAD) {
+            if (m.state !== spritestates.DEAD) {
                 if (e.x < m.x + m.w && e.y < m.y + m.h && e.x + e.w > m.x && e.y + e.h > m.y) {
                     return m;
                 }
@@ -389,11 +419,11 @@ game = {
 
     togglePaused: function () {
         log('toggling game state');
-        if (game.state == RUNNING) {
-            game.state = PAUSED;
+        if (game.state == gamestates.RUNNING) {
+            game.state = gamestates.PAUSED;
             $(idPaused).show();
         } else {
-            game.state = RUNNING;
+            game.state = gamestates.RUNNING;
             $(idPaused).hide();
         }
     },
@@ -401,7 +431,7 @@ game = {
     run: function () {
 
         setInterval(function () {
-            if (game.state == RUNNING) {
+            if (game.state == gamestates.RUNNING) {
                 game.updatePlayer();
                 game.updateMonsters();
                 game.updateWeapons();
@@ -417,7 +447,7 @@ $(document).bind('keydown', function (e) {
 
 $(document).bind('keyup', function (e) {
     keys[e.keyCode] = false;
-    if (e.keyCode == KEY_P) { game.togglePaused(); }
+    if (e.keyCode == keycodes.P) { game.togglePaused(); }
 });
 
 game.init();
