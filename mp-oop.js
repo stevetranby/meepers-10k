@@ -203,7 +203,7 @@ game = {
                 dy: Math.random() * 5,
                 w: cellsize,
                 h: cellsize,
-                attackPower: 5,
+                attack: 5,
                 state: ALIVE,
                 el: jqdiv('m' + i, 'm', 'M', 0, 0, cellsize, cellsize),
                 dir: DOWN
@@ -268,7 +268,7 @@ game = {
         // if collide with monster, kill monster
         var monster = game.collideMonster(player);
         if (null !== monster) {
-            player.health -= monster.attackPower;
+            player.health -= monster.attack;
         }
 
         // check collisions    

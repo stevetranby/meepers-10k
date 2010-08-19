@@ -20,11 +20,11 @@ function jqdiv(id, cls, str, x, y, w, h) {
     return $("<div/>", { 'id': id, 'class': cls, 'html': str }).css({ left: x, top: y, width: w, height: h }); 
 }
 
-function update_hud(health, rocks, keys, room) { 
-    $("#health").html(health);
-    $("#rocks").html(rocks);
-    $("#keys").html(keys);
-    $("#rooms").html(room);
+function update_hud(p) { 
+    $("#health").html(p.health);
+    $("#rocks").html(p.rocks);
+    $("#keys").html(p.keys);
+    $("#rooms").html(p.room);
 }
 
 var 
@@ -141,7 +141,7 @@ game = {
 
         // init monsters      
         for (var i = 0; i < numMonsters; ++i) {
-            _health = rnd(3, 5);
+            _health = rnd(1, 9);
             monsters[i] = {
                 id: 'm' + i,
                 x: cols / 2 * cellsize + (i - numMonsters / 2) * cellsize,
@@ -241,7 +241,7 @@ game = {
         // if collide with monster, kill monster
         var monster = game.collideMonster(player);
         if (null !== monster) {
-            player.health -= monster.attackPower;
+            player.health -= monster.attack;
         }
 
         if (player.x <= 0) { player.x = (cols - 1) * cellsize - 1 }
@@ -349,7 +349,7 @@ game = {
             speed: 5,
             parent: e,
             state: spritestates.ALIVE,
-            attackPower: 1,
+            attack: 1,
             el: jqdiv(_id, 'w' + ((e == player) ? 'P' : 'M'), 'o', e.x + cellsize / 2, e.y + cellsize / 2, cellsize / 2, cellsize / 2)
         });
 
@@ -386,7 +386,7 @@ game = {
                 } else {
                     // if collide with player, hurt player
                     if (game.collidePlayer(w)) {
-                        player.health -= w.attackPower;
+                        player.health -= w.attack;
                         player.el.animate({ opacity: 0.5 }, {
                             duration: 100,
                             complete: function () {
@@ -503,7 +503,7 @@ game = {
                 game.updatePlayer();
                 game.updateMonsters();
                 game.updateWeapons();
-                game.updateHUD();
+                game.updateHUD(player);
             }
         }, 20);
     }
