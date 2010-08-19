@@ -86,8 +86,9 @@ player = {
     dir: directions.RIGHT,
     lastDir: directions.RIGHT,
     health: 100,
-    rocks: 10,
+    rocks: 100,
     keys: 1,
+    attack: 2,
     boundingBox: { x: 0, y: cellsize / 2, w: cellsize, h: cellsize / 2 },
     el: jqdiv('p0', 'p', ':)', this.x, this.y, cellsize, cellsize)
 },
@@ -140,6 +141,7 @@ game = {
 
         // init monsters      
         for (var i = 0; i < numMonsters; ++i) {
+            _health = rnd(3, 5);
             monsters[i] = {
                 id: 'm' + i,
                 x: cols / 2 * cellsize + (i - numMonsters / 2) * cellsize,
@@ -150,10 +152,11 @@ game = {
                 dy: 0,
                 w: cellsize,
                 h: cellsize,
-                attackPower: 2,
+                attack: 2,
                 dir: 1 + M.floor(M.random() * directions.DOWN),
                 speed: 2,
-                health: rnd(1, 3),
+                health: _health,
+                healthMax: _health,
                 state: spritestates.ALIVE,
                 aistate: aistates.RANDOM,
                 aiTimer: 0,
@@ -373,10 +376,12 @@ game = {
                     var monster = game.collideMonster(w);
                     if (null !== monster) {
                         monster.health -= player.attack;
-                        if (monster.health < 0) {
+                        if (monster.health <= 0) {
                             game.killMonster(monster);
-                            game.killWeapon(w);
                         }
+                        monster.el.fadeTo("fast", monster.health / monster.healthMax);
+                        log('monster.health = ' + monster.health);
+                        game.killWeapon(w);
                     }
                 } else {
                     // if collide with player, hurt player
