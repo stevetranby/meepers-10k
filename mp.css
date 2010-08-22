@@ -4,12 +4,12 @@ body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background:
 
 .c, .m, .p, .wP, .wM { text-align: center; border-radius: 10px; }
 
-.c { border: 1px solid black;  border-radius: 0;}
-.c1 { background: #ff9; }
-.c2 { background: #993; }
+.c { border: 1px solid black;  border-radius: 0; z-index: 0; }
+.c1 { background: #cc8; }
+.c2 { background: #666; }
 .c3 { background: #999; }
-.m { border: 2px solid red; background: #933;  }
-.p { border: 3px solid green; background: #339; -webkit-transform: rotate(90deg); }
+.m { border: 2px solid red; background: #933; z-index: 10; }
+.p { border: 3px solid green; background: #339; -webkit-transform: rotate(90deg); z-index: 100; }
 .wP { border: 3px solid #666; background: #ccc; }
 .wM { border: 3px solid #933; background: #f99; }
 
