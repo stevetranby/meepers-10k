@@ -1,17 +1,38 @@
-body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background: #999; color: White; }
+body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background: #223; color: White; }
 
-#newgame, #title, #hud, #area, #paused, #game, .c, .m, .p, .wP, .wM { position: absolute; background: url(mp.png) 0 0 no-repeat; margin: 0; padding: 0; }
+#newgame, #title, #hud, #area, #paused, #game, .c, .m, .p, .wP, .wM { position: absolute; margin: 0; padding: 0; }
 
 .c, .m, .p, .wP, .wM { text-align: center; border-radius: 10px; }
 
-.c { border: 1px solid black;  border-radius: 0; z-index: 0; }
-.c1 { background: #cc8; }
-.c2 { background: #666; }
-.c3 { background: #999; }
+/* .c { border: 1px solid black; border-radius: 0; z-index: 0; } */
+.c { border: none; border-radius: 0; z-index: 0; } 
+.c1 { border: 0px solid #999; background: #333  
+      -webkit-gradient(linear, 
+      left top, 
+      right bottom, 
+      color-stop(0.0, #999), 
+      color-stop(0.5, #bbb),
+      color-stop(1.0, #999)); }
+
+.c2h { background: -webkit-gradient(linear, left top, left bottom, color-stop(0.0, #223), color-stop(0.5, #999), color-stop(1.0, #333)); }
+.c2v { background: -webkit-gradient(linear, left top, right top, color-stop(0.0, #223), color-stop(0.5, #999), color-stop(1.0, #333)); }
+/* 32 == cellsize */
+.c2tl { background: -webkit-gradient(radial, 32 32, 0, 32 32, 32, from(#223), to(#223), color-stop(.5,#999)); }
+.c2bl { background: -webkit-gradient(radial, 0 32, 0, 0 32, 32, from(#223), to(#223), color-stop(.5,#999)); }
+ .c2tr { background: -webkit-gradient(radial, 32 0, 0, 32 0, 32, from(#223), to(#223), color-stop(.5,#999)); }
+.c2br { background: -webkit-gradient(radial, 0 0, 0, 0 0, 32, from(#223), to(#223), color-stop(.5,#999)); }
+
+.c3h { background: -webkit-gradient(linear, left top, left bottom, color-stop(0.0, #223), color-stop(0.2, #999),  color-stop(0.8, #999), color-stop(1.0, #333)); }
+.c3v { background: -webkit-gradient(linear, left top, right top, color-stop(0.0, #223), color-stop(0.2, #999),  color-stop(0.8, #999), color-stop(1.0, #333)); }
+
 .m { border: 2px solid red; background: #933; z-index: 10; }
 .p { border: 3px solid green; background: #339; -webkit-transform: rotate(90deg); z-index: 100; }
-.wP { border: 3px solid #666; background: #ccc; }
+.wP { border: 3px solid #333; background: #ccc; }
 .wM { border: 3px solid #933; background: #f99; }
+
+/* tiles */
+.tkey { border: 0px solid #333; background: #993; }
+.trock { border: 0px solid #333; background: #393; }
 
 #newgame { top: 5px; left: 5px; padding: 4px; width: 80px; border: 1px solid white; background: #9f9; border-radius: 5px; font-size: 12px; }
 #newgame:hover { background: #090; cursor: pointer; }
@@ -20,3 +41,4 @@ body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background:
 
 #title { top: 0px; left: 120px; padding: 5px; height: 50px; }
 #hud { top: 70px; left: 5px; width: 90px; height: 100px; font-size: smaller; }
+/* #score, #health, #rocks, #keys { text-align: right; } */
