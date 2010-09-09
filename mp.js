@@ -13,8 +13,8 @@
 
 // log(msg) requires functions to be named --> function _NAME_() <--
 function _log(msg) {
-  if (console.log) {
-    console.log(msg);
+  if (!!window.console && !!window.console.log) {
+    window.console.log(msg);
   }
 }
 
@@ -65,13 +65,13 @@ MAX_ROOM_ROWS = 14,
  DIR_STILL = 0, DIR_UP = 1, DIR_RIGHT = 2, DIR_LEFT = 3, DIR_DOWN = 4,
 ALIVE = 0, DEAD = 1,
 AI_RANDOM = 0, AI_CHASE = 1, AI_EVADE = 2, AI_STILL = 3, AI_PATTERN = 4, AI_EXPLODE = 5,
-RUNNING = 0, PAUSED = 1,
+STARTMENU = 0, RUNNING = 1, PAUSED = 2,
 n_directions = 5,
 n_spritestates = 2,
 n_aistates = 3,
 n_gamestates = 2,
 //tiletypes = { WALL: 0, DOOR: 1, FLOOR: 2, KEY: 3, ROCKS: 4 },
-TILE_WALL = 0, TILE_DOOR = 1, TILE_FLOOR = 2, TILE_KEY = 3, TILE_ROCKS = 4,
+TILE_WALL = 0, TILE_DOOR = 1, TILE_FLOOR = 2, TILE_KEY = 3, TILE_ROCKS = 4, TILE_HEALTH,
 //keycodes
 //keycodes = { SPACE: 32, LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, P: 80, A: 65, W: 87, D: 68, S: 83 },
 KEY_SPACE = 32, KEY_LEFT = 37, KEY_UP = 38, KEY_RIGHT = 39, KEY_DOWN = 40, KEY_P = 80, KEY_A = 65, KEY_W = 87, KEY_D = 68, KEY_S = 83,
@@ -85,7 +85,9 @@ difficulty = 1, // difficulty 1-5 (should multiply # of monsters, monster quickn
 PX = 'px',
 idArea = '#area',
 idGame = '#game',
+idMenu = '#menu',
 idPaused = '#paused',
+idGameOver = '#gameover',
 idScore = '#score',
 idHealth = "#health",
 idRocks = "#rocks",
@@ -186,14 +188,16 @@ player = {
   rocks: 100,
   keys: 1,
   attack: 2,
+  score: 0,
   boundingBox: { x: 0, y: cellsize / 2, w: cellsize, h: cellsize / 2 },
-  el: jqdiv('p0', 'p', ':)', 100, 200, cellsize, cellsize)
+  el: jqdiv('p0', 'p', '', 100, 200, cellsize, cellsize)
 },
 
 game = {
-  state: RUNNING,
+  state: STARTMENU,
   cur_room: 0,
 
+  // DEMO RANDOM ROOMS
   initLevel: function initLevel(i) {
 
     numRooms = rnd(3, 10);
@@ -209,12 +213,12 @@ game = {
       // extra tiles
       numExtraTiles = rnd(0, 3);
       for (i = 0; i < numExtraTiles; ++i) {
-        room.extraTiles.push([rnd(2, room.cols - 2), rnd(2, room.rows - 2), ((rnd(0, 5) < 4) ? TILE_ROCKS : TILE_KEY)]);
+        room.extraTiles.push([rnd(2, room.cols - 2), rnd(2, room.rows - 2), ((rnd(0, 20) < 15) ? TILE_ROCKS : TILE_HEALTH)]);
       }
 
       numMonsters = rnd(3, 6);
       for (i = 0; i < numMonsters; ++i) {
-        room.monsterPositions.push([rnd(1, room.cols - 2), rnd(1, room.rows - 2)]);
+        room.monsterPositions.push([rnd(2, room.cols - 3), rnd(2, room.rows - 3)]);
       }
 
       rooms.push(room);
@@ -302,7 +306,7 @@ game = {
         log(t);
         t.type = etile[2];
         t.el.remove();
-        t.el = appendTileDiv(t.x, t.y, 'c ' + ((t.type == TILE_ROCKS) ? 'trock' : 'tkey'), ((t.type == TILE_ROCKS) ? '{rk}' : 'ky'));
+        t.el = appendTileDiv(t.x, t.y, 'c ' + ((t.type == TILE_ROCKS) ? 'tr' : 'th'), '');
         t.walkable = TRUE;
       }
 
@@ -355,16 +359,17 @@ game = {
         h: cellsize,
         attack: 2,
         dir: DIR_UP + rnd(DIR_UP, DIR_DOWN - DIR_UP),
-        speed: 2,
+        speed: 1,
         health: _health,
         healthMax: _health,
+        killScore: _health * 10,
         state: ALIVE,
         aistate: AI_RANDOM,
         aiTimer: 0,
         aiTimerThreshold: 5, // multiple of dirTimerThreshold before change
         dirTimer: 0,
         dirTimerThreshold: 25,
-        el: jqdiv('m' + i, 'm', 'M', 0, 0, cellsize, cellsize)
+        el: jqdiv('m' + i, 'm', '', 0, 0, cellsize, cellsize)
       };
       //log(monsters[i]);
       $(idGame).append(monsters[i].el);
@@ -447,7 +452,7 @@ game = {
       w: cellsize / 2,
       h: cellsize / 2,
       dir: e.lastDir,
-      speed: 5,
+      speed: 4,
       parent: e,
       state: ALIVE,
       attack: 1,
@@ -488,7 +493,11 @@ game = {
 
   update: function update(e) {
     if (e.el) {
-      e.el.css({ left: e.x + PX, top: e.y + PX });
+      d = e.lastDir > 0 ? e.lastDir : e.dir;
+      rot = (d == DIR_UP ? '0' : (d == DIR_RIGHT ? '90' : (d == DIR_DOWN ? '180' : '-90')));
+      css = { left: e.x + PX, top: e.y + PX, '-webkit-transform': ('rotate(' + rot + 'deg)'), '-moz-transform': ('rotate(' + rot + 'deg)'), 'transform': ('rotate(' + rot + 'deg)') };
+      log(css);
+      e.el.css(css);
     }
   },
 
@@ -522,7 +531,7 @@ game = {
 
     game.move(player);
 
-    // if collide with monster, kill monster
+    // if collide with monster, get hurt
     var monster = game.collideMonster(player);
     if (null !== monster) {
       player.health -= monster.attack;
@@ -564,6 +573,14 @@ game = {
       tile.type = TILE_FLOOR;
     }
 
+    if (tile.type == TILE_HEALTH) {
+      player.health += 100;
+      if (player.health > player.maxHealth) player.health = player.maxHealth;
+      tile.el.remove();
+      tile.el = appendTileDiv(tile.x, tile.y, 'c c1', '');
+      tile.type = TILE_FLOOR;
+    }
+
     game.update(player);
 
     if (player.dir != DIR_STILL) player.lastDir = player.dir;
@@ -597,11 +614,11 @@ game = {
             //log('new state = ' + monster.aistate);
 
             if (monster.aistate === AI_CHASE || monster.aistate == AI_EVADE) {
-              monster.aiTimerThreshold = 20;
-              monster.dirTimerThreshold = 8;
+              monster.aiTimerThreshold = 8;
+              monster.dirTimerThreshold = 50;
             } else {
               monster.aiTimerThreshold = 5;
-              monster.dirTimerThreshold = 15;
+              monster.dirTimerThreshold = 30;
             }
 
           } else {
@@ -661,18 +678,21 @@ game = {
         if (null == tile || !tile.walkable || tile.type === TILE_DOOR) {
           monster.x -= 2 * monster.dx;
           monster.y -= 2 * monster.dy;
+          //monster.dir = DIR_STILL;
           //log("[before]monster.dir = " + monster.dir);
           //monster.dir = dirRevers(monster.dir);
+
           switch (monster.dir) {
-            case DIR_UP: monster.dir = DIR_DOWN;
+            case DIR_UP:
+            case DIR_DOWN:
+              monster.dir = (rnd(1, 2) == 1) ? DIR_LEFT : DIR_RIGHT;
               break;
-            case DIR_RIGHT: monster.dir = DIR_LEFT;
-              break;
-            case DIR_DOWN: monster.dir = DIR_UP;
-              break;
-            case DIR_LEFT: monster.dir = DIR_RIGHT;
+            case DIR_LEFT:
+            case DIR_RIGHT:
+              monster.dir = (rnd(1, 2) == 1) ? DIR_UP : DIR_DOWN;
               break;
           }
+
           //log("[after]monster.dir = " + monster.dir);
           //monster.dir = DIR_STILL;
         }
@@ -702,6 +722,7 @@ game = {
           if (null !== monster) {
             monster.health -= player.attack;
             if (monster.health <= 0) {
+              player.score += monster.killScore;
               game.killMonster(monster);
             }
             monster.el.fadeTo("fast", monster.health / monster.healthMax);
@@ -838,11 +859,44 @@ game = {
   run: function run() {
 
     setInterval(function () {
-      if (game.state == RUNNING) {
-        game.updatePlayer();
-        game.updateMonsters();
-        game.updateWeapons();
-        game.updateHUD(player);
+      switch (game.state) {
+        case RUNNING:
+          {
+            if (keys[KEY_P]) {
+              game.togglePaused();
+            }
+            game.updatePlayer();
+            game.updateMonsters();
+            game.updateWeapons();
+            // check for game over
+            if (player.health <= 0) {
+              player.health = 0;
+              $(idGame).hide();
+              $(idGameOver).width('100%');
+              $(idGameOver).height('100%');
+              $(idGameOver).show();
+              game.state = PAUSED;
+            }
+            game.updateHUD(player);
+          }
+          break;
+        case PAUSED:
+          {
+            if (keys[KEY_P]) {
+              game.togglePaused();
+            }
+          }
+          break;
+        case STARTMENU:
+          {
+            if (keys[KEY_SPACE]) {
+              $(idMenu).hide();
+              $(idGame).show();
+              game.state = RUNNING;
+              log('moving to running state');
+            }
+          }
+          break;
       }
     }, 20);
   }
@@ -854,11 +908,12 @@ $(document).bind('keydown', function (e) {
 
 $(document).bind('keyup', function (e) {
   keys[e.keyCode] = false;
-  if (e.keyCode == KEY_P) { game.togglePaused(); }
 });
 
 game.init();
 game.run();
+$(idGameOver).width('100%');
+$(idGameOver).height('100%');
 
 /*
 /////////////////////
