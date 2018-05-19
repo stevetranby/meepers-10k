@@ -6,12 +6,12 @@ body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background:
 
 /* .c { border: 1px solid black; border-radius: 0; z-index: 0; } */
 .c { border: none; -moz-border-radius: 0; border-radius: 0; z-index: 0; }
-.c1 { border: 0px solid #999; 
+.c1 { border: 0px solid #999;
       background-color: #333;
-      background: -webkit-gradient(linear,        left top,        right bottom,        color-stop(0.0, #999),        color-stop(0.5, #bbb),       color-stop(1.0, #999)); 
+      background: -webkit-gradient(linear,        left top,        right bottom,        color-stop(0.0, #999),        color-stop(0.5, #bbb),       color-stop(1.0, #999));
       background: -moz-linear-gradient(top left, #999, #bbb, #999);
       }
-      
+
 
 .c2h { background: -webkit-gradient(linear, left top, left bottom, color-stop(0.0, #223), color-stop(0.5, #999), color-stop(1.0, #333));
        background: -moz-linear-gradient(top, #223, #999, #223); }
@@ -29,19 +29,19 @@ body { font-family: Helvetica, Arial, sans-serif; font-weight: bold; background:
        background: -moz-linear-gradient(left, #223, #999, #999, #333); }
 
 /*
-.m { border: 2px solid red; background: url(img/player.png); z-index: 10; }
-.p { border: 3px solid green; background: url(img/player.png); -webkit-transform: rotate(90deg); z-index: 100; }
+.m { border: 2px solid red; background: url(../img/player.png); z-index: 10; }
+.p { border: 3px solid green; background: url(../img/player.png); -webkit-transform: rotate(90deg); z-index: 100; }
 */
-.m { background: url(img/monster.png); z-index: 10; }
-.p { background: url(img/player.png); z-index: 100; }
+.m { background: url(../img/monster.png); z-index: 10; }
+.p { background: url(../img/player.png); z-index: 100; }
 
 .wP { border: 3px solid #333; background: #ccc; }
 .wM { border: 3px solid #933; background: #f99; }
 
 /* tiles */
-/* .tk { border: 0px solid #333; background: #aaa url(img/tile-key.png); } */
-.tr { border: 0px solid #333; background: url(img/tile-rocks.png) no-repeat; }
-.th { border: 0px solid #333; background: url(img/tile-health.png) no-repeat; }
+/* .tk { border: 0px solid #333; background: #aaa url(../img/tile-key.png); } */
+.tr { border: 0px solid #333; background: url(../img/tile-rocks.png) no-repeat; }
+.th { border: 0px solid #333; background: url(../img/tile-health.png) no-repeat; }
 
 #newgame { top: 5px; left: 5px; padding: 4px; width: 80px; border: 1px solid white; background: #9f9; -moz-border-radius: 5px; border-radius: 5px; font-size: 12px; }
 #newgame:hover { background: #090; cursor: pointer; }
